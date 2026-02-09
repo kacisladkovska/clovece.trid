@@ -2,140 +2,159 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<title>Člověče, třiď!</title>
+<title>Člověče – ekologická hra</title>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #eef2f3;
-  text-align: center;
+  background: #eef6f3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
+h1 { margin: 10px; }
 
 #board {
   display: grid;
   grid-template-columns: repeat(11, 50px);
   grid-template-rows: repeat(11, 50px);
-  gap: 4px;
-  margin: 20px auto;
+  gap: 2px;
+  background: #333;
 }
 
 .cell {
   width: 50px;
   height: 50px;
+  background: #f5f5f5;
   border-radius: 50%;
-  border: 2px solid #333;
   position: relative;
-  background: white;
 }
 
-.start-yellow { background:#f1c40f; }
-.start-blue { background:#3498db; }
-.start-green { background:#2ecc71; }
-.start-brown { background:#8e5a2a; }
+.path { background: #ddd; }
 
-.piece {
-  width: 16px;
-  height: 16px;
+.start-blue { background: #6fa8dc; }
+.start-green { background: #93c47d; }
+.start-brown { background: #b45f06; }
+.start-yellow { background: #ffd966; }
+
+.home-blue { background: #9fc5e8; }
+.home-green { background: #b6d7a8; }
+.home-brown { background: #d5a06a; }
+.home-yellow { background: #ffe599; }
+
+#earth {
+  grid-column: 5 / 8;
+  grid-row: 5 / 8;
+  background: none;
+}
+
+#earth img {
+  width: 150px;
+  height: 150px;
+}
+
+.pawn {
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   position: absolute;
+  bottom: 2px;
+  right: 2px;
 }
 
-.yellow { background:#f1c40f; }
-.blue { background:#3498db; }
-.green { background:#2ecc71; }
-.brown { background:#8e5a2a; }
+.blue { background: blue; }
+.green { background: green; }
+.brown { background: brown; }
+.yellow { background: goldenrod; }
 
-.controls {
-  margin-top: 20px;
+#controls {
+  margin-top: 15px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>Člověče, třiď!</h1>
+<h1>Člověče – desková hra</h1>
 
 <div id="board"></div>
 
-<div class="controls">
-  <p>Na tahu: <b id="playerTurn"></b></p>
-  <button onclick="rollDice()">🎲 Hod kostkou</button>
-  <p id="dice"></p>
+<div id="controls">
+  <button onclick="rollDice()">🎲 Hodit kostkou</button>
+  <span id="info"></span>
 </div>
 
 <script>
-/* ====== HERNÍ DATA ====== */
+const board = document.getElementById("board");
+const info = document.getElementById("info");
 
-const players = ["yellow","blue","green","brown"];
-let currentPlayer = 0;
-let diceValue = 0;
-
-// zjednodušená trasa (indexy buněk v gridu – lze později přesně doladit)
 const path = [
-  60,61,62,63,64,65,54,43,32,21,
-  10,11,12,13,14,15,26,37,48,59,
-  70,71,72,73,74,75,76,65,54,43,
-  32,31,30,29,28,27,36,45,54,63
+  [5,0],[5,1],[5,2],[5,3],[5,4],
+  [6,5],[7,5],[8,5],[9,5],[10,5],
+  [5,6],[5,7],[5,8],[5,9],[5,10],
+  [4,5],[3,5],[2,5],[1,5],[0,5]
 ];
 
-// figurky
-let pieces = {};
-players.forEach(p => {
-  pieces[p] = [-1,-1,-1,-1];
-});
+const players = [
+  {color:"blue", start:0, pos:-1},
+  {color:"green", start:5, pos:-1},
+  {color:"brown", start:10, pos:-1},
+  {color:"yellow", start:15, pos:-1}
+];
 
-/* ====== VYKRESLENÍ ====== */
+let current = 0;
 
-const board = document.getElementById("board");
-for(let i=0;i<121;i++){
-  const c = document.createElement("div");
-  c.className = "cell";
-  board.appendChild(c);
-}
+function createBoard() {
+  for(let r=0;r<11;r++){
+    for(let c=0;c<11;c++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
 
-function render(){
-  document.querySelectorAll(".piece").forEach(p=>p.remove());
+      if(path.some(p=>p[0]==c && p[1]==r)) cell.classList.add("path");
 
-  players.forEach(color=>{
-    pieces[color].forEach(pos=>{
-      if(pos>=0){
-        const piece = document.createElement("div");
-        piece.className = "piece "+color;
-        piece.style.top = "2px";
-        piece.style.left = "2px";
-        board.children[path[pos]].appendChild(piece);
-      }
-    });
-  });
-
-  document.getElementById("playerTurn").innerText = players[currentPlayer];
-}
-
-render();
-
-/* ====== LOGIKA HRY ====== */
-
-function rollDice(){
-  diceValue = Math.floor(Math.random()*6)+1;
-  document.getElementById("dice").innerText = "Hodil/a jsi: "+diceValue;
-
-  let playerColor = players[currentPlayer];
-  let figs = pieces[playerColor];
-
-  // vstup do hry
-  let idx = figs.findIndex(f=>f===-1);
-  if(idx !== -1){
-    figs[idx] = diceValue;
-  } else {
-    figs[0] += diceValue;
-    if(figs[0] >= path.length){
-      figs[0] = path.length-1;
+      board.appendChild(cell);
     }
   }
 
-  currentPlayer = (currentPlayer+1)%4;
-  render();
+  const earth = document.createElement("div");
+  earth.id="earth";
+  earth.innerHTML='<img src="https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg">';
+  board.appendChild(earth);
 }
+
+function rollDice(){
+  const roll = Math.floor(Math.random()*6)+1;
+  const player = players[current];
+
+  if(player.pos === -1){
+    player.pos = player.start;
+  } else {
+    player.pos = (player.pos + roll) % path.length;
+  }
+
+  renderPawns();
+  info.textContent = `Hráč ${player.color} hodil ${roll}`;
+  current = (current+1)%players.length;
+}
+
+function renderPawns(){
+  document.querySelectorAll(".pawn").forEach(p=>p.remove());
+
+  players.forEach(p=>{
+    if(p.pos>=0){
+      const [x,y] = path[p.pos];
+      const index = y*11 + x;
+      const cell = board.children[index];
+
+      const pawn = document.createElement("div");
+      pawn.className = `pawn ${p.color}`;
+      cell.appendChild(pawn);
+    }
+  });
+}
+
+createBoard();
 </script>
 
 </body>
